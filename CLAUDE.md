@@ -1,0 +1,65 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+FreeVideocaster envía enlaces de video directos (Stremio + TorBox) desde Android a un Roku, sin anuncios ni telemetría. Son dos programas que hablan entre sí: una app Android (`android/`) y un canal Roku de desarrollador en BrightScript (`roku-receiver/`). El usuario trabaja en español: textos de la app, mensajes de error y comentarios están en español.
+
+## Comandos
+
+Windows + PowerShell 5.1. No hay `JAVA_HOME` ni `ANDROID_HOME` configurados ni `local.properties`: hay que apuntarlos a un JDK 17+ y a un SDK con `platforms;android-37.0` antes de usar Gradle.
+
+```powershell
+# Desde la raíz del repo (el wrapper no se resuelve si solo se escribe gradlew.bat)
+android\gradlew.bat -p android assembleDebug          # APK en android\app\build\outputs\apk\debug\
+android\gradlew.bat -p android testDebugUnitTest lintDebug
+android\gradlew.bat -p android testDebugUnitTest --tests "io.github.freevideocaster.media.TitleCleanerTest"   # una clase (o ...Test.metodo)
+adb install -r out\FreeVideocaster-debug.apk           # `out\` está en .gitignore; se copia ahí el APK a mano
+
+# Canal Roku: validar sin Roku y desplegar (requiere modo desarrollador en el Roku)
+npx -p brighterscript bsc --rootDir roku-receiver --createPackage false --copyToStaging false
+powershell -ExecutionPolicy Bypass -File scripts\deploy-roku.ps1 -RokuIp <IP> -Password <pass>   # usuario rokudev
+powershell -ExecutionPolicy Bypass -File scripts\send-to-roku.ps1 -RokuIp <IP> -Url <url> [-Mode input]
+powershell -ExecutionPolicy Bypass -File scripts\test-ecp.ps1 [-RokuIp <IP>]   # fase 0: sondea ECP, interactivo
+telnet <IP> 8085                                       # consola BrightScript (mensajes [FreeVideocaster])
+```
+
+Trampas de PowerShell 5.1: usar `curl.exe -X POST` (con `-d ""` el argumento vacío se pierde); guardar con BOM los `.ps1` que lleven acentos; `Compress-Archive` escribe rutas con `\` y el instalador de Roku las rechaza (por eso `deploy-roku.ps1` arma el ZIP a mano).
+
+## Arquitectura
+
+**Camino de un video.** Stremio abre `receive/ReceiveActivity` con `ACTION_VIEW` + `video/*` (los `mimeType` del filtro en el manifiesto deben ir en minúsculas: Android los compara distinguiendo mayúsculas). `Caster.cast` lo orquesta: `LinkResolver` (GET `Range: bytes=0-0`, sigue redirecciones, lee `Content-Type`/nombre) → `TitleCleaner` (nombre de release → título + etiquetas) → `EcpClient.sendToChannel`. `ReceiveActivity` muestra el título real (el de Stremio casi nunca sirve: `Caster.describe` abre el enlace y usa `Content-Disposition`/nombre del archivo), envía solo si `autoSend`, y tras enviar cambia a la pantalla «Reproduciendo» (`SentContent`: avance, pausa, saltos, botón grande «Abrir el control», «Volver a Stremio»); `Caster.awaitPlayback` devuelve `PlaybackResult(message, started, failed)`. Si el canal `dev` ya está abierto usa `POST :8060/input`; si no, `/launch/dev` con los parámetros. Los valores de más de 240 caracteres no caben en un parámetro ECP (Roku documenta 255): se abre el canal sin parámetros, se espera y se manda la consulta entera troceada (`cid,i,n,chunk`), que `main.brs` reconstruye (`AddChunk`/`ParseQuery`). Los canales nativos 15985/2213 no existen en este Roku; por eso hay canal propio.
+
+**Estado compartido.** `Caster` (construido a mano en `FreeVideocasterApp`, sin inyección de dependencias; se obtiene con `context.caster`) expone `live: StateFlow<LiveState?>`, un sondeo de 1 s con `WhileSubscribed` que usan a la vez la pantalla de control y la notificación. Consulta primero el estado del canal (`GET :8061/status`, `ChannelClient`) y, si no responde, `ECP /query/media-player`. Un `StateFlow` no vuelve a emitir valores iguales: cualquier lógica con tiempo (como el vigilante de `CastSessionService`) necesita su propio reloj, no basta con `collect`.
+
+**Canal Roku (`roku-receiver/`).** `source/main.brs` recibe `roInputEvent`, normaliza parámetros, reconstruye trozos y sirve el estado en un `roStreamSocket` (puerto 8061, solo lectura, sin la URL del video). Entrega cada orden a `components/PlayerScene.brs` por el campo `request`; la escena ejecuta `action` (`play, queue, dequeue, next, toggle, pause, resume, skip, seek, stop, clearqueue, audio, subtitle`) y publica `status` cada segundo, incluidas las pistas de audio y subtítulos (`audio/subs` con `id, lang, name`; `audiocur/subcur`). Las pistas se eligen escribiendo `audioTrack` / `subtitleTrack` + `globalCaptionMode` en el nodo Video (verificado en el Roku real; el idioma llega como `en`/`es` de 2 letras con HLS). Detalles que ya dieron problemas: `sub` es palabra reservada (el campo es `subtitle`); las claves del JSON de estado van en minúsculas; `isActive()` es `m.current <> invalid`, no el estado del nodo Video (que tarda en cambiar y provocaba que una orden `queue` pisara al video).
+
+**Retomar y claves.** `MediaRequest.key` = SHA-256 de la URL **original** de Stremio (antes de redirecciones), 12 hex. Se manda como `key`, el canal la devuelve en el estado y `HistoryStore` guarda posición/duración por esa clave (el enlace final de TorBox cambia en cada sesión). `HistoryStore` es un JSON en `filesDir` con `Mutex`; al leer entradas viejas vuelve a limpiar títulos con `TitleCleaner`.
+
+**Notificación.** `CastSessionService` (primer plano, tipo `connectedDevice`) lo arranca `Caster.cast` con la app visible. Publica una `MediaSession` + notificación con −10 s / pausa / +10 s / (siguiente) / detener, guarda el progreso (cada 10 s y al cambiar de video) y se apaga solo ~15 s después de que no haya nada reproduciéndose. Las acciones y los callbacks envían las mismas órdenes que la pantalla de control (`Caster.command`).
+
+**Red y permisos.** `targetSdk 37`: Android 17 bloquea la red local sin `ACCESS_LOCAL_NETWORK` en tiempo de ejecución (`net/LocalNetwork`), que cubre también SSDP y el WebView. ECP es HTTP, así que `network_security_config` permite texto claro global; a cambio `EcpClient`/`ChannelClient` solo aceptan IPs privadas (`EcpClient.isPrivateIp`). Con una VPN activa el tráfico normal sale por la VPN y no llega a la red local: `net/WifiTracker` sigue la red Wi-Fi/Ethernet real y `WifiSocketFactory` ata a ella los clientes del Roku (`localHttp` en `FreeVideocasterApp`) y el socket SSDP; `LinkResolver` usa el cliente normal a propósito. Errores hacia el usuario siempre como `CastException` con mensaje en español.
+
+**Ajustes y tema.** `data/Settings.kt` guarda en DataStore el Roku elegido y `AppPrefs` (tema, AMOLED, colores, buscador, bloqueo, envío automático, volver a la app anterior). `Caster.prefs` es un `StateFlow` con el primer valor leído de golpe (`runBlocking`) para que no haya un fogonazo de tema al abrir; `FreeVideocasterTheme(rememberAppPrefs())` lo usan las dos actividades y repite `enableEdgeToEdge` con el tema forzado (si no, los íconos de la barra de estado se pierden). Con los valores por defecto la app se ve igual que antes: no cambiar la estética sin que el usuario lo pida. Hoja `ui/SettingsSheet` desde el engranaje del Inicio.
+
+**Bloqueador de anuncios.** `adblock/FilterEngine` (Kotlin puro, con pruebas) lee listas con sintaxis Adblock Plus: reglas por dominio en un `HashMap` por servidor (los de «bloquear todo el dominio» comparten un objeto), patrones con prefiltro por subcadena, `$third-party/$domain/tipos`, excepciones, `$document/$elemhide/$generichide` y ocultar elementos (`##`, `#@#`); descarta regex y sintaxis extendida. `adblock/AdBlocker` (uno por app, `Context.adBlocker`) carga `assets/filters/*.txt` (o las descargadas en `filesDir/filters`, «Actualizar listas» en Ajustes) en segundo plano y decide en `BrowserScreen`: `shouldInterceptRequest` (se corta antes de detectar videos), `shouldOverrideUrlLoading` (esquemas no web, anunciantes y saltos entre dominios sin toque), `onCreateWindow` (ventanas sin toque se bloquean; con toque se abren en la misma vista) y CSS inyectado en `onPageCommitVisible`/`onPageFinished`. WebView no da el tipo de recurso: se deduce en `RequestType.guess`. Las listas son EasyList/EasyPrivacy/EasyList Spanish (GPLv3+/CC BY-SA); conservar su cabecera.
+
+**UI.** Compose con un solo `MainViewModel` y pestañas (`Tab`: Home, Remote, History, Browser); el diagnóstico (`diag/Diagnostics` + `ui/DiagnosticsScreen`) se superpone con `showDiagnostics`. `MainScreen` pone un `MiniPlayer` sobre la barra inferior mientras algo suena. Los selectores (`DeviceSheet`, `LinkSheet`, `TrackSheet`) son `ModalBottomSheet`. Los íconos que no trae `material-icons-core` están dibujados en `ui/AppIcons.kt` (no añadir `material-icons-extended`: engorda el APK). Los botones de control (`ui/Components.kt`: `RoundButton`, `SkipButton`, `DPad`, `VolumeRocker`) llevan `contentDescription` y repiten al mantener pulsado con `repeatOnPress`; ese texto es lo que usan las pruebas con `uiautomator`. Las etiquetas de idioma salen de `roku/TrackLabels`. El navegador (`ui/browser`) detecta `.m3u8/.mp4/.mkv` con `shouldInterceptRequest`.
+
+## Pruebas
+
+Las pruebas unitarias solo cubren lógica pura (`TitleCleaner`, claves, JSON de estado, `isPrivateIp`, resume). Lo que usa `android.*` (p. ej. `XmlFields`) o el canal Roku se verifica en dispositivos reales. `org.json` está como `testImplementation` porque el de Android no existe en la JVM de pruebas. Con el celular por USB: `adb shell am start -a android.intent.action.VIEW -d <url> -t video/* -n io.github.freevideocaster/.receive.ReceiveActivity --es title <nombre>` simula a Stremio; `adb shell run-as io.github.freevideocaster cat files/history.json` lee el historial. `uiautomator` no ve la barra de notificaciones en Android 17 y las teclas multimedia no llegan a la sesión mientras hay una llamada. `docs/pruebas-v0.2.md`, `docs/pruebas-v0.3.md` y `docs/pruebas-v0.4.md` listan qué está verificado y qué no; `docs/mejoras.md` es la hoja de ruta. Al tocar por nombre con `uiautomator` cuidado con textos repetidos (por eso el botón del control se llama «Inicio Roku» y no «Inicio») y con el teclado abierto, que tapa los botones de abajo; la tecla Enter por `adb` deja el campo con foco (usar la tecla de acción del teclado en pantalla).
+
+## Compatibilidad con versiones de Android
+
+`minSdk 24`, `targetSdk 37`. `docs/compatibilidad-android.md` tiene la matriz de lo probado (emuladores 25, 26, 30, 34 y 36 con `scripts/fake-roku.py` como Roku de mentira, más el Pixel con Android 17) y las diferencias por versión. Las imágenes de emulador de Android 7.x no simulan Wi-Fi, y la app exige Wi-Fi o Ethernet. Todo lo que use APIs posteriores a la 24 debe ir protegido con `Build.VERSION.SDK_INT` (Lint falla si no: `lintDebug` es parte de la verificación). El ícono adaptable vive en `mipmap-anydpi-v26`; `mipmap-anydpi` tiene el de respaldo.
+
+## Firma del APK (clave privada)
+
+La clave de firma está en `signing/` (raíz del repositorio): `freevideocaster-release.jks`, `keystore.properties` (contraseñas) y `LEEME.txt`. **Nunca se sube a git ni se hace push con ella, ni se pega en un chat, un issue o un ZIP del proyecto.** `.gitignore` ya excluye `/signing/`, `*.jks`, `*.keystore`, `keystore.properties`, `*.p12` y `*.pfx`; antes de cada `git add` o commit comprobar con `git status` que no aparece nada de eso, y no usar `git add -f` sobre esos archivos. No imprimir las contraseñas. Si se pierde la clave no se puede actualizar la app ya instalada: hay que guardar una copia fuera del equipo. `android\gradlew.bat -p android assembleRelease` firma solo si `signing/keystore.properties` existe (si no, sale sin firmar); `apksigner verify --print-certs` comprueba la firma. Para probar un release firmado en el Pixel hay que desinstalar antes la versión de depuración (otra firma), lo que borra sus datos: no hacerlo sin respaldar el historial ni avisar.
+
+## Reglas del proyecto
+
+- Por ahora solo Roku. Otros receptores y modelos de Android se añaden más adelante, cuando la app esté pulida y antes del lanzamiento público; no mostrar opciones que no funcionan.
+- El repositorio es público (rama `main`, remoto `origin`): no hacer `git commit` ni `git push` hasta que el usuario lo pida, y antes de subir comprobar que no hay claves, contraseñas, rutas de su equipo, IPs reales ni sitios o títulos que use. Nunca subir `signing/`.
+- Verificar en equipos reales antes de dar algo por funcional; el usuario prefiere probar al final, con Stremio.
+- Al automatizar el celular con `adb`, comprobar la app en primer plano antes de escribir y tocar por texto, no por coordenadas (un toque erróneo abrió un anuncio de otra app).

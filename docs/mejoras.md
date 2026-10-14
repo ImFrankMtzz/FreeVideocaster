@@ -1,0 +1,117 @@
+# Hoja de ruta de FreeVideocaster
+
+Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-13.
+
+## Hecho (versión 0.2)
+
+| Mejora | Estado |
+|---|---|
+| Títulos limpios a partir de nombres de release («Serie.S01E03.1080p…» → «Serie S01E03») | Hecho y probado |
+| Retomar donde se quedó (guarda posición por enlace de Stremio) | Hecho y probado |
+| Diagnóstico de conexión con soluciones en español e informe copiable | Hecho y probado |
+| Notificación con controles y sesión multimedia | Hecha; **botones sin probar** (ver `pruebas-v0.2.md`) |
+| Canal v2: estado en vivo en el puerto 8061 (posición, cola, error) | Hecho y probado en el Roku |
+| Cola real (leída del canal) con quitar elemento | Hecho y probado |
+
+## Hecho en el rediseño (versión 0.3)
+
+| Mejora | Estado |
+|---|---|
+| Inicio con tarjeta de conexión, «Seguir viendo» y guía «Cómo empezar» con video de ejemplo | Hecho y probado (el botón de ejemplo, no) |
+| «Conectar a tu TV»: hoja con búsqueda, IP manual, compatibilidad y diagnóstico | Hecho y probado |
+| Aviso claro al pegar un magnet o una página web | Hecho y probado |
+| Mini-reproductor fijo sobre las pestañas | Hecho y probado |
+| Control remoto con cruceta, balancín de volumen, saltos circulares y pausa grande | Hecho y probado (efecto del volumen en el TV sin verificar) |
+| Elegir pista de audio y de subtítulos incrustados | Hecho y probado con un video HLS; falta un MKV real |
+| Las órdenes al Roku funcionan con una VPN activa | Hecho y probado |
+| Navegador: seleccionar todo al tocar la barra, cerrar el teclado, títulos limpios | Hecho y probado |
+
+## Hecho en la versión 0.4 (sin probar en equipos reales: ver `pruebas-v0.4.md`)
+
+| Mejora | Estado |
+|---|---|
+| Ajustes: tema Sistema/Claro/Oscuro, negro AMOLED, colores, buscador | Hecho; **por probar** |
+| Google como buscador y página de inicio del navegador | Hecho; **por probar** |
+| Bloqueador de anuncios propio (EasyList/EasyPrivacy/Spanish) con contador y interruptor | Hecho y probado con las listas reales en la JVM; **por probar en el teléfono** |
+| Pantalla «Reproduciendo» tras enviar desde Stremio, con título real del archivo | Hecho; **por probar** |
+| Enviar automáticamente y volver a Stremio solo (ajustes, desactivados de fábrica) | Hecho; **por probar** |
+
+## Siguiente bloque recomendado
+
+| Mejora | Detalle | Esfuerzo |
+|---|---|---|
+| **Asistente de primer uso** | Permisos, buscar Roku, estado del canal y botón **«Enviar video de prueba»**; después se oculta la tarjeta «Desde Stremio». | M |
+| Segundos de salto configurables y más ajustes | Ver «Ajustes pequeños»; ya existe la hoja de Ajustes donde añadirlos. | P |
+
+## Decisión de alcance (2026-10-14)
+
+Por ahora **solo Roku**. Otros receptores (DLNA/UPnP y Kodi como primeros candidatos; Chromecast y Fire TV más
+costosos) y otros modelos de Android se añaden cuando la app esté pulida y antes del lanzamiento público. Requiere
+primero una interfaz común de «receptor» (hoy `Caster` llama directo a `EcpClient`/`ChannelClient`) y poder probar
+con equipos reales de cada tipo. No mostrar tipos de dispositivo que no funcionen.
+
+## Ajustes pequeños
+
+| Mejora | Esfuerzo |
+|---|---|
+| Segundos de salto configurables (10, 15, 30) | P |
+| Mantener el Wi-Fi activo durante la reproducción (para que la notificación responda con pantalla apagada) | P |
+| Mantener pulsado −/+ para avanzar o retroceder; vibración al tocar | P |
+| Probar con letra grande; pasar a dos filas si los botones no caben | P |
+| Aviso fijo de problema en la tarjeta de estado, con botón de diagnóstico | P |
+| Exportar e importar historial y ajustes en un archivo | P |
+| Pantalla «Privacidad» (qué se guarda y que nada sale del teléfono) | P |
+| Informe de errores copiable si la app falla | P |
+
+## Subtítulos y audio (esperan la prueba de la v0.2)
+
+| Mejora | Esfuerzo |
+|---|---|
+| Subtítulos por URL, archivo del teléfono y OpenSubtitles, más estilo | G |
+| Idioma preferido (p. ej. audio en español latino) aplicado solo al empezar cada video | M |
+| Averiguar qué manda Stremio (la pantalla «Ver detalles técnicos» lo muestra) | P |
+
+## Funciones de referencia aún sin cubrir (ver `revision-wvc.md`)
+
+| Mejora | Esfuerzo |
+|---|---|
+| Pausar al entrar una llamada y reanudar al colgar (requiere permiso de teléfono; opcional) | M |
+| Reproducir en el teléfono / abrir con otra app | M |
+| Archivos del teléfono (mini servidor dentro de la app) | G |
+| IPTV con listas M3U | M |
+| Proxy desde el teléfono (solo si algún enlace queda atado a la IP) | G |
+
+## Ideas nuevas
+
+| Mejora | Notas | Esfuerzo |
+|---|---|---|
+| Cruceta y teclas del Roku (flechas, OK, Info, repetir 10 s) | Para manejar menús sin el control. | M |
+| Encender el TV al enviar | Si responde a `PowerOn`; **verificar** en el KD28X. | P |
+| Cola reordenable | Arrastrar para cambiar el orden. | M |
+| Mosaico de ajustes rápidos y accesos directos del ícono | «Control», «Diagnóstico», «Último video». | M |
+| Widget de inicio | Pausa, saltos y volumen. | M |
+| Textos en recursos e inglés | Hoy están dentro del código, en español. | M |
+
+## Lado Roku
+
+| Mejora | Notas | Esfuerzo |
+|---|---|---|
+| Pantalla de reproducción propia | Título, progreso y cola visibles en la TV. | M |
+| Pantalla en reposo útil | IP, últimos videos y cola. | P |
+| **Quitar el modo desarrollador** | Es la mayor fricción para otras personas. Roku permite canales «no certificados» con enlace de instalación; **verificar sus límites** antes de decidir. | G |
+
+## Proyecto abierto
+
+| Mejora | Esfuerzo |
+|---|---|
+| CI en GitHub: compilar, probar, Lint y publicar el APK firmado en cada versión | M |
+| Capturas y guía de instalación ilustrada en el README | P |
+
+## Decisiones técnicas que condicionan lo anterior
+
+1. **El canal informa a la app** (v2, puerto 8061, solo lectura). Es la base de las pistas de audio, la cola real, el
+   progreso y los errores con motivo. El JSON no incluye la URL del video.
+2. **Retomar se indexa por el enlace original de Stremio** (antes de las redirecciones), no por el título, porque
+   el enlace final de TorBox cambia en cada sesión.
+3. **El servicio de notificación usa el tipo `connectedDevice`** y se apaga solo (~15 s tras terminar). Las acciones
+   de la notificación y la sesión multimedia envían las mismas órdenes que la pantalla de control.

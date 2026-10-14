@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- La interfaz es Compose; este tema solo cubre la ventana mientras arranca. -->
+    <style name="Theme.FreeVideocaster" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+</resources>

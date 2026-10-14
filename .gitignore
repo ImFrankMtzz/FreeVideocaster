@@ -1,0 +1,26 @@
+# Paquete del canal Roku generado por deploy-roku.ps1
+/out/
+
+# CLAVE DE FIRMA DEL APK: nunca se sube a git ni se publica. Si se pierde no se puede actualizar la app instalada.
+/signing/
+*.jks
+*.keystore
+keystore.properties
+*.p12
+*.pfx
+
+# Android / Gradle (fase 1b)
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Windows / VS Code
+Thumbs.db
+.vscode/

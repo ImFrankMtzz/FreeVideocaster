@@ -1,0 +1,21 @@
+! FreeVideocaster - reglas propias (redes de anuncios emergentes y de empuje muy comunes en sitios de películas).
+! Se suman a EasyList; si alguna ya está allí no pasa nada.
+||popads.net^
+||popcash.net^
+||propellerads.com^
+||exoclick.com^
+||exosrv.com^
+||juicyads.com^
+||adsterra.com^
+||hilltopads.net^
+||clickadu.com^
+||trafficjunky.com^
+||onclickads.net^
+||ad-maven.com^
+||admaven.com^
+||adcash.com^
+||bidvertiser.com^
+||popunder.net^
+||a-ads.com^
+||adskeeper.com^
+||richads.com^

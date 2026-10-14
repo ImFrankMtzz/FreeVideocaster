@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  El control del Roku (ECP, puerto 8060) solo existe por HTTP sin cifrar, y su IP
+  cambia según la red, así que no se puede limitar por dominio. Se permite HTTP en
+  claro, pero EcpClient se niega a enviar órdenes a IPs que no sean privadas
+  (10.x, 172.16-31.x, 192.168.x).
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration" />
+</network-security-config>
