@@ -87,6 +87,24 @@ class TitleCleanerTest {
     }
 
     @Test
+    fun searchDataComesFromTheName() {
+        val episode = TitleCleaner.parse("Mi.Serie.S01E08.1080p.WEB-DL.mkv")
+        assertEquals("Mi Serie", episode.searchTitle)
+        assertEquals(1, episode.season)
+        assertEquals(8, episode.episode)
+        assertNull(episode.year)
+
+        val movie = TitleCleaner.parse("Dune.2021.1080p.BluRay.mkv")
+        assertEquals("Dune", movie.searchTitle)
+        assertEquals(2021, movie.year)
+        assertNull(movie.season)
+        assertNull(movie.episode)
+
+        assertEquals("Show", TitleCleaner.parse("Show 2x05 720p").searchTitle)
+        assertEquals(5, TitleCleaner.parse("Show 2x05 720p").episode)
+    }
+
+    @Test
     fun nameFromUrlDecodesTheLastSegment() {
         assertEquals("Mi Video.mkv", TitleCleaner.nameFromUrl("https://cdn.example/dl/Mi%20Video.mkv?token=abc#x"))
         assertEquals("playback", TitleCleaner.nameFromUrl("https://host.example/a/b/playback"))

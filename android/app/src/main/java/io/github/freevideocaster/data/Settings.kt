@@ -34,6 +34,8 @@ data class AppPrefs(
     val autoSend: Boolean = false,
     /** Volver a la app anterior (p. ej. Stremio) cuando el Roku ya reproduce. */
     val autoReturn: Boolean = false,
+    /** Buscar subtítulos en línea (español e inglés) al enviar un video. */
+    val onlineSubtitles: Boolean = true,
 )
 
 /** Guarda el último Roku usado (se recuerda por número de serie por si cambia su IP) y las preferencias. */
@@ -54,6 +56,7 @@ class Settings(private val context: Context) {
         val adBlock = booleanPreferencesKey("pref_adblock")
         val autoSend = booleanPreferencesKey("pref_auto_send")
         val autoReturn = booleanPreferencesKey("pref_auto_return")
+        val onlineSubtitles = booleanPreferencesKey("pref_online_subtitles")
     }
 
     val roku: Flow<RokuDevice?> = context.dataStore.data.map { prefs ->
@@ -89,6 +92,7 @@ class Settings(private val context: Context) {
             adBlock = p[Keys.adBlock] ?: true,
             autoSend = p[Keys.autoSend] ?: false,
             autoReturn = p[Keys.autoReturn] ?: false,
+            onlineSubtitles = p[Keys.onlineSubtitles] ?: true,
         )
     }
 
@@ -99,6 +103,7 @@ class Settings(private val context: Context) {
     suspend fun setAdBlock(value: Boolean) = context.dataStore.edit { it[Keys.adBlock] = value }
     suspend fun setAutoSend(value: Boolean) = context.dataStore.edit { it[Keys.autoSend] = value }
     suspend fun setAutoReturn(value: Boolean) = context.dataStore.edit { it[Keys.autoReturn] = value }
+    suspend fun setOnlineSubtitles(value: Boolean) = context.dataStore.edit { it[Keys.onlineSubtitles] = value }
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =
         enumValues<E>().firstOrNull { it.name == name } ?: default

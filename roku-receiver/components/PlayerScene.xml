@@ -2,7 +2,7 @@
 <component name="PlayerScene" extends="Scene">
     <interface>
         <!-- main.brs escribe aquí cada orden recibida:
-             { action, url, title, format, subtitle, headers, pos, delta, key, start, index, id } -->
+             { action, url, title, format, subtitle, subs, headers, pos, delta, key, start, index, id } -->
         <field id="request" type="assocarray" onChange="onRequest" alwaysNotify="true" />
         <!-- Estado actual; main.brs lo publica como JSON en el puerto 8061 -->
         <field id="status" type="assocarray" />
@@ -36,6 +36,7 @@
         </Rectangle>
 
         <Timer id="hideTimer" duration="6" />
+        <Timer id="flipTimer" duration="3" />
         <Timer id="statusTimer" duration="1" repeat="true" control="start" />
     </children>
 </component>

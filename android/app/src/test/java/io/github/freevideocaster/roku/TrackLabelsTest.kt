@@ -42,6 +42,19 @@ class TrackLabelsTest {
     }
 
     @Test
+    fun uploaderAddressesAreNotShownAsTrackNames() {
+        assertEquals("Español", label("spa", "www.ejemplo.com"))
+        assertEquals("Inglés", label("eng", "#uniq:www.ejemplo.com(2)"))
+        assertEquals("Pista 2", label("", "https://ejemplo.com/x", index = 1))
+    }
+
+    @Test
+    fun onlineTracksAreLabelledByLanguageAndVersion() {
+        assertEquals("Español · En línea 1", label("spa", "En línea 1"))
+        assertEquals("Inglés · En línea 2", label("eng", "En línea 2"))
+    }
+
+    @Test
     fun unknownLanguageFallsBackToTheNameOrAPosition() {
         assertEquals("Pista principal", label("und", "Pista principal"))
         assertEquals("Pista 3", label("", "", index = 2))

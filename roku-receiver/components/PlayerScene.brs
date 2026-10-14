@@ -9,10 +9,16 @@ sub init()
     m.current = invalid   ' Orden del video que se está reproduciendo
     m.seq = 0             ' Aumenta con cada video nuevo; la app lo usa para detectar cambios
     m.lastError = ""
+    m.subsChosen = false  ' true si el usuario (o el enlace) eligió subtítulos para el video actual
+    m.flip = invalid      ' Cambio de audio de ida y vuelta en curso (ver startAudioFlip)
+    m.flipPending = false ' Hay que hacerlo en cuanto el video vuelva a reproducirse
+    m.flipTimer = m.top.findNode("flipTimer")
+    m.flipTimer.observeField("fire", "onFlipTimer")
 
     m.video.observeField("state", "onVideoState")
+    m.video.observeField("currentSubtitleTrack", "onSubtitleChanged")
     m.hideTimer.observeField("fire", "hideStatus")
-    m.statusTimer.observeField("fire", "publishStatus")
+    m.statusTimer.observeField("fire", "onStatusTimer")
 
     showIpAddress()
     publishStatus()
@@ -30,6 +36,12 @@ end sub
 
 ' Resume qué pasa ahora; main.brs lo sirve como JSON en http://ROKU:8061/status.
 ' Las claves van en minúsculas a propósito.
+' Cada segundo: apaga los subtítulos que el Roku active solo y publica el estado.
+sub onStatusTimer()
+    keepSubtitlesOffUnlessChosen()
+    publishStatus()
+end sub
+
 sub publishStatus()
     state = "idle"
     if m.video.visible
@@ -69,6 +81,7 @@ sub publishStatus()
     if state <> "idle"
         audio = trackList(m.video.availableAudioTracks, "Track", ["Name"])
         audioCurrent = textOf(m.video.currentAudioTrack)
+        if m.flip <> invalid then audioCurrent = m.flip.audio  ' Durante el cambio se sigue mostrando el audio real
         subtitles = trackList(m.video.availableSubtitleTracks, "TrackName", ["Description"])
         if m.video.globalCaptionMode = "On" then subtitleCurrent = textOf(m.video.currentSubtitleTrack)
     end if
@@ -154,11 +167,19 @@ sub onRequest()
         if isActive() and req.id <> "" then m.video.audioTrack = req.id
     else if action = "subtitle"
         if isActive()
+            m.subsChosen = true
             if req.id = "" or LCase(req.id) = "off"
+                m.flipPending = false
                 m.video.globalCaptionMode = "Off"
             else
                 m.video.subtitleTrack = req.id
                 m.video.globalCaptionMode = "On"
+                ' En MKV el Roku marca la pista como activa pero no la dibuja hasta que se reabre la
+                ' transmisión (probado: reposicionar, retroceder o reiniciar no bastan; cambiar de
+                ' audio sí). Se hace ese cambio y su regreso, sin sonido, ver startAudioFlip().
+                if Left(req.id, 5) <> "<dev_" then
+                    if m.video.state = "playing" then startAudioFlip() else m.flipPending = true
+                end if
             end if
         end if
     end if
@@ -202,6 +223,8 @@ sub playNow(req as Object)
     m.current = req
     m.seq = m.seq + 1
     m.lastError = ""
+    m.flipPending = false
+    endAudioFlip()  ' Si había un cambio de audio a medias, devuelve el sonido
 
     content = CreateObject("roSGNode", "ContentNode")
     content.url = req.url
@@ -223,16 +246,25 @@ sub playNow(req as Object)
         if headers.Count() > 0 then content.httpHeaders = headers
     end if
 
+    ' Subtítulos externos: tienen que ir con el video. Cargarlos con el video ya en marcha lo congela.
+    ' "sub" es una sola pista que empieza encendida; "subs" son varias ("idioma|nombre|url", una por línea)
+    ' que empiezan apagadas y se eligen después.
     hasSub = req.subtitle <> invalid and req.subtitle <> ""
-    if hasSub
-        content.subtitleTracks = [{ Language: "spa", TrackName: req.subtitle, Description: "Subtítulos" }]
-    end if
+    tracks = []
+    if hasSub then tracks.Push({ Language: "spa", TrackName: req.subtitle, Description: "Subtítulos" })
+    for each track in parseExternalSubs(req.subs)
+        tracks.Push(track)
+    end for
+    if tracks.Count() > 0 then content.subtitleTracks = tracks
 
+    m.subsChosen = hasSub
     m.video.control = "stop"
     m.video.content = content
     if hasSub
         m.video.globalCaptionMode = "On"
         m.video.subtitleTrack = req.subtitle
+    else
+        m.video.globalCaptionMode = "Off"  ' Los subtítulos empiezan apagados; se eligen desde la app
     end if
 
     m.idle.visible = false
@@ -244,6 +276,25 @@ sub playNow(req as Object)
     showStatus("Cargando: " + title + "  (formato: " + format + ")" + queueSuffix(), false)
     publishStatus()
 end sub
+
+' Convierte "idioma|nombre|url" (una pista por línea) en la lista que espera ContentNode.subtitleTracks.
+function parseExternalSubs(text as Dynamic) as Object
+    result = []
+    if GetInterface(text, "ifString") = invalid or text = "" then return result
+    for each line in text.Split(Chr(10))
+        first = Instr(1, line, "|")
+        if first > 1
+            second = Instr(first + 1, line, "|")
+            if second > first + 1
+                url = Mid(line, second + 1)
+                if Left(url, 4) = "http"
+                    result.Push({ Language: Left(line, first - 1), Description: Mid(line, first + 1, second - first - 1), TrackName: url })
+                end if
+            end if
+        end if
+    end for
+    return result
+end function
 
 ' Traduce el formato recibido (o la extensión de la URL) al streamFormat de Roku.
 ' Devuelve "" si no se sabe, y Roku intenta detectarlo solo.
@@ -263,9 +314,69 @@ function streamFormatFor(format as Dynamic, url as String) as String
     return ""
 end function
 
+' Cambia a otra pista de audio y, pasados unos segundos, vuelve a la original, con el sonido
+' silenciado para que no se oiga el otro idioma. Obliga al Roku a dibujar el subtítulo elegido.
+' Sin una segunda pista de audio no hay a dónde cambiar y no se hace nada.
+sub startAudioFlip()
+    m.flipPending = false
+    if m.flip <> invalid then return
+    tracks = m.video.availableAudioTracks
+    current = textOf(m.video.currentAudioTrack)
+    if tracks = invalid or tracks.Count() < 2 or current = "" then return
+
+    other = ""
+    for each track in tracks
+        if other = "" and textOf(track.Track) <> current then other = textOf(track.Track)
+    end for
+    if other = "" then return
+
+    m.flip = { audio: current, mute: m.video.mute, stage: 1 }
+    m.video.mute = true
+    m.video.audioTrack = other
+    m.flipTimer.duration = 3
+    m.flipTimer.control = "start"
+end sub
+
+sub onFlipTimer()
+    if m.flip = invalid then return
+    if m.flip.stage = 1
+        m.video.audioTrack = m.flip.audio
+        m.flip.stage = 2
+        m.flipTimer.duration = 2  ' Espera a que el audio original vuelva a sonar antes de quitar el silencio
+        m.flipTimer.control = "start"
+    else
+        endAudioFlip()
+    end if
+end sub
+
+sub endAudioFlip()
+    if m.flip = invalid then return
+    m.flipTimer.control = "stop"
+    m.video.mute = m.flip.mute
+    m.flip = invalid
+end sub
+
+' El Roku elige por su cuenta una pista de subtítulos unos segundos después de empezar
+' (según su ajuste del sistema). Si nadie las pidió, se vuelven a apagar.
+sub onSubtitleChanged()
+    keepSubtitlesOffUnlessChosen()
+end sub
+
+sub keepSubtitlesOffUnlessChosen()
+    if m.current = invalid or m.subsChosen then return
+    if m.video.globalCaptionMode <> "Off"
+        print "[FreeVideocaster] Subtítulos apagados (el Roku los activó solo)"
+        m.video.globalCaptionMode = "Off"
+    end if
+end sub
+
 sub onVideoState()
     state = m.video.state
     print "[FreeVideocaster] Estado del video: "; state
+    if state = "playing"
+        keepSubtitlesOffUnlessChosen()
+        if m.flipPending then startAudioFlip()
+    end if
 
     if state = "buffering"
         showStatus("Cargando…" + queueSuffix(), false)
@@ -314,6 +425,8 @@ sub showError()
     print "[FreeVideocaster] ERROR "; code; ": "; detail
     showStatus("No se pudo reproducir (código " + code.ToStr() + "). " + hint + " " + detail, false)
     m.lastError = "Código " + code.ToStr() + ". " + hint
+    m.flipPending = false
+    endAudioFlip()
     m.current = invalid
     m.video.visible = false
     m.idle.visible = true
@@ -332,6 +445,8 @@ sub hideStatus()
 end sub
 
 sub goIdle()
+    m.flipPending = false
+    endAudioFlip()
     m.video.control = "stop"
     m.video.visible = false
     m.idle.visible = true

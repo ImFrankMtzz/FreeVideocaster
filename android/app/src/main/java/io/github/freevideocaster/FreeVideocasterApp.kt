@@ -6,6 +6,7 @@ import io.github.freevideocaster.adblock.AdBlocker
 import io.github.freevideocaster.data.HistoryStore
 import io.github.freevideocaster.data.Settings
 import io.github.freevideocaster.media.LinkResolver
+import io.github.freevideocaster.media.OnlineSubtitles
 import io.github.freevideocaster.net.WifiSocketFactory
 import io.github.freevideocaster.net.WifiTracker
 import io.github.freevideocaster.roku.ChannelClient
@@ -45,6 +46,7 @@ class FreeVideocasterApp : Application() {
             ecp = EcpClient(localHttp),
             channel = ChannelClient(localHttp),
             resolver = LinkResolver(http),
+            subtitles = OnlineSubtitles(http),
             discovery = SsdpDiscovery(this),
             settings = Settings(this),
             history = HistoryStore(this, appScope),

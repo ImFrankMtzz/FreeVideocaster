@@ -1,6 +1,6 @@
 # Hoja de ruta de FreeVideocaster
 
-Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-13.
+Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-14.
 
 ## Hecho (versión 0.2)
 
@@ -9,7 +9,7 @@ Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-13.
 | Títulos limpios a partir de nombres de release («Serie.S01E03.1080p…» → «Serie S01E03») | Hecho y probado |
 | Retomar donde se quedó (guarda posición por enlace de Stremio) | Hecho y probado |
 | Diagnóstico de conexión con soluciones en español e informe copiable | Hecho y probado |
-| Notificación con controles y sesión multimedia | Hecha; **botones sin probar** (ver `pruebas-v0.2.md`) |
+| Notificación con controles y sesión multimedia | Hecha y probada (botones confirmados en el teléfono) |
 | Canal v2: estado en vivo en el puerto 8061 (posición, cola, error) | Hecho y probado en el Roku |
 | Cola real (leída del canal) con quitar elemento | Hecho y probado |
 
@@ -26,15 +26,15 @@ Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-13.
 | Las órdenes al Roku funcionan con una VPN activa | Hecho y probado |
 | Navegador: seleccionar todo al tocar la barra, cerrar el teclado, títulos limpios | Hecho y probado |
 
-## Hecho en la versión 0.4 (sin probar en equipos reales: ver `pruebas-v0.4.md`)
+## Hecho en la versión 0.4 y publicado como 1.0.0 (ver `pruebas-v0.4.md`)
 
 | Mejora | Estado |
 |---|---|
-| Ajustes: tema Sistema/Claro/Oscuro, negro AMOLED, colores, buscador | Hecho; **por probar** |
-| Google como buscador y página de inicio del navegador | Hecho; **por probar** |
-| Bloqueador de anuncios propio (EasyList/EasyPrivacy/Spanish) con contador y interruptor | Hecho y probado con las listas reales en la JVM; **por probar en el teléfono** |
-| Pantalla «Reproduciendo» tras enviar desde Stremio, con título real del archivo | Hecho; **por probar** |
-| Enviar automáticamente y volver a Stremio solo (ajustes, desactivados de fábrica) | Hecho; **por probar** |
+| Ajustes: tema Sistema/Claro/Oscuro, negro AMOLED, colores, buscador | Hecho y probado |
+| Google como buscador y página de inicio del navegador | Hecho y probado |
+| Bloqueador de anuncios propio (EasyList/EasyPrivacy/Spanish) con contador y interruptor | Hecho y probado en el teléfono y con uso real; falta medir cuántos anuncios deja pasar por sitio |
+| Pantalla «Reproduciendo» tras enviar desde Stremio, con título real del archivo | Hecho y probado |
+| Enviar automáticamente y volver a Stremio solo (ajustes, desactivados de fábrica) | Hecho y probado |
 
 ## Siguiente bloque recomendado
 
@@ -63,11 +63,18 @@ con equipos reales de cada tipo. No mostrar tipos de dispositivo que no funcione
 | Pantalla «Privacidad» (qué se guarda y que nada sale del teléfono) | P |
 | Informe de errores copiable si la app falla | P |
 
-## Subtítulos y audio (esperan la prueba de la v0.2)
+## Subtítulos y audio
+
+Hecho (2026-10-14, ver `pruebas-subtitulos.md`): los subtítulos incrustados empiezan apagados y, al elegirlos, se
+dibujan de verdad en MKV (el canal cambia de audio y vuelve, en silencio). Un MKV con una sola pista de audio no
+puede usar ese truco: **sin probar**. **Subtítulos en línea (OpenSubtitles v3 + Cinemeta):** hecho y probado con una
+serie; hasta 2 versiones en español y 2 en inglés, listadas como «En línea N»; interruptor en Ajustes.
 
 | Mejora | Esfuerzo |
 |---|---|
-| Subtítulos por URL, archivo del teléfono y OpenSubtitles, más estilo | G |
+| Subtítulos por URL pegada y archivo del teléfono (la búsqueda en línea ya está), más estilo | G |
+| Mostrar qué obra encontró la búsqueda y poder corregirla; elegir otros idiomas | M |
+| **Ocultar la clave de TorBox** en «Ver detalles técnicos» y en el botón Copiar (la URL de Stremio la lleva dentro) | P |
 | Idioma preferido (p. ej. audio en español latino) aplicado solo al empezar cada video | M |
 | Averiguar qué manda Stremio (la pantalla «Ver detalles técnicos» lo muestra) | P |
 

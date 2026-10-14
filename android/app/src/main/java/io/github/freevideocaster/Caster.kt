@@ -7,6 +7,7 @@ import io.github.freevideocaster.data.Settings
 import io.github.freevideocaster.diag.Diagnostics
 import io.github.freevideocaster.media.LinkResolver
 import io.github.freevideocaster.media.MediaRequest
+import io.github.freevideocaster.media.OnlineSubtitles
 import io.github.freevideocaster.media.TitleCleaner
 import io.github.freevideocaster.net.LocalNetwork
 import io.github.freevideocaster.roku.CastException
@@ -50,6 +51,7 @@ class Caster(
     private val ecp: EcpClient,
     private val channel: ChannelClient,
     private val resolver: LinkResolver,
+    private val subtitles: OnlineSubtitles,
     private val discovery: SsdpDiscovery,
     val settings: Settings,
     val history: HistoryStore,
@@ -206,6 +208,13 @@ class Caster(
         val title = shown.title.ifBlank { "Video" }
         val detail = request.detail.ifBlank { shown.detail }
 
+        val onlineSubs = if (prefs.value.onlineSubtitles && request.subtitleUrl == null) {
+            onProgress("Buscando subtítulos…")
+            subtitles.find(subtitleQuery(request, resolved, shown))
+        } else {
+            emptyList()
+        }
+
         val before = channel.status(device.ip)
         seqBeforeCast = before?.seq ?: 0
         val busy = enqueue && before != null && before.playback != Playback.Idle
@@ -218,6 +227,7 @@ class Caster(
             (request.format ?: resolved.format)?.let { put("format", it) }
             if (startMs >= 1000) put("start", (startMs / 1000).toString())
             request.subtitleUrl?.let { put("sub", it) }
+            if (onlineSubs.isNotEmpty()) put("subs", OnlineSubtitles.toChannelParam(onlineSubs))
             if (request.headers.isNotEmpty()) {
                 put("headers", request.headers.entries.joinToString("\n") { "${it.key}: ${it.value}" })
             }
@@ -241,6 +251,24 @@ class Caster(
      */
     suspend fun describe(request: MediaRequest): TitleCleaner.Parsed =
         nameFor(request, resolver.resolve(request))
+
+    /**
+     * Qué buscar: el título limpio y, si se sabe, año, temporada y episodio. Stremio pone `season` y `episode`
+     * en la dirección de sus enlaces, y eso es más fiable que el nombre del archivo.
+     */
+    private fun subtitleQuery(request: MediaRequest, resolved: LinkResolver.Resolved, shown: TitleCleaner.Parsed): OnlineSubtitles.Query {
+        fun number(name: String) = Regex("""[?&]$name=(\d{1,3})(?!\d)""").find(request.url)?.groupValues?.get(1)?.toIntOrNull()
+        val season = number("season") ?: shown.season
+        val episode = number("episode") ?: shown.episode
+        val releaseName = listOfNotNull(resolved.fileName, TitleCleaner.nameFromUrl(resolved.finalUrl)).firstOrNull { !TitleCleaner.isUseless(it) }.orEmpty()
+        return OnlineSubtitles.Query(
+            title = shown.searchTitle,
+            year = shown.year,
+            season = season.takeIf { episode != null },
+            episode = episode.takeIf { season != null },
+            releaseName = releaseName,
+        )
+    }
 
     /** El título que manda Stremio suele ser basura («playback»); entonces se usa el nombre del archivo. */
     private fun nameFor(request: MediaRequest, resolved: LinkResolver.Resolved): TitleCleaner.Parsed {

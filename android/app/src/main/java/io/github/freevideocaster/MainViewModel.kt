@@ -67,6 +67,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setAdBlock(value: Boolean) = save { setAdBlock(value) }
     fun setAutoSend(value: Boolean) = save { setAutoSend(value) }
     fun setAutoReturn(value: Boolean) = save { setAutoReturn(value) }
+    fun setOnlineSubtitles(value: Boolean) = save { setOnlineSubtitles(value) }
 
     private fun save(change: suspend Settings.() -> Unit) {
         viewModelScope.launch { caster.settings.change() }

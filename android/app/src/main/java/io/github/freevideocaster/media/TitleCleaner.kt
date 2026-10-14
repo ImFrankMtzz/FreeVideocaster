@@ -8,7 +8,18 @@ import java.net.URLDecoder
  */
 object TitleCleaner {
 
-    data class Parsed(val title: String, val detail: String)
+    /**
+     * [searchTitle] es el título sin la marca de episodio; [year], [season] y [episode] salen del nombre
+     * cuando están (sirven para buscar subtítulos).
+     */
+    data class Parsed(
+        val title: String,
+        val detail: String,
+        val searchTitle: String = title,
+        val year: Int? = null,
+        val season: Int? = null,
+        val episode: Int? = null,
+    )
 
     private val IGNORE = RegexOption.IGNORE_CASE
 
@@ -86,9 +97,11 @@ object TitleCleaner {
         var title = normalize(name.substring(0, titleEnd))
         if (title.isEmpty()) title = normalize(name)
 
-        val episodeLabel = (episode ?: episodeX)?.let { match ->
+        val episodeMatch = episode ?: episodeX
+        val episodeLabel = episodeMatch?.let { match ->
             "S%02dE%02d".format(match.groupValues[1].toInt(), match.groupValues[2].toInt())
         }
+        val searchTitle = title.trim()
         if (episodeLabel != null) title = "$title $episodeLabel".trim()
 
         val region = if (markerEnd != null) name.substring(markerEnd) else ""
@@ -106,7 +119,14 @@ object TitleCleaner {
                     .take(3),
             )
         }
-        return Parsed(title, badges.joinToString(" · "))
+        return Parsed(
+            title = title,
+            detail = badges.joinToString(" · "),
+            searchTitle = searchTitle,
+            year = year?.value?.toInt(),
+            season = episodeMatch?.groupValues?.get(1)?.toInt(),
+            episode = episodeMatch?.groupValues?.get(2)?.toInt(),
+        )
     }
 
     /** Último tramo de una URL, decodificado («…/Mi%20Video.mkv?x=1» → «Mi Video.mkv»). */

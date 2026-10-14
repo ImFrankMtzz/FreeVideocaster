@@ -32,7 +32,8 @@ object TrackLabels {
      */
     fun label(track: Track, index: Int): String {
         val language = languageName(track.language)
-        val name = track.name.trim()
+        // Muchos MKV traen como nombre de pista la dirección de quien los subió: no aporta nada.
+        val name = track.name.trim().takeUnless { ADVERTISING_NAME.containsMatchIn(it) }.orEmpty()
         val lower = name.lowercase()
 
         // Variantes del español que los archivos suelen indicar en el nombre.
@@ -48,6 +49,8 @@ object TrackLabels {
         val nameLanguage = languageName(name) ?: LANGUAGE_BY_ENGLISH_NAME[lower]
         return if (nameLanguage == language) language else "$language · $name"
     }
+
+    private val ADVERTISING_NAME = Regex("""(?i)https?://|\bwww\.|#uniq|\.(com|net|org|info|tv|to|cc|ac|me|io)\b""")
 
     private val LANGUAGE_BY_ENGLISH_NAME = mapOf(
         "english" to "Inglés", "spanish" to "Español", "french" to "Francés", "portuguese" to "Portugués",

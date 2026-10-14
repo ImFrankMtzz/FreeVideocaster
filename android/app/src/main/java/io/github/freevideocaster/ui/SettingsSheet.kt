@@ -89,6 +89,17 @@ fun SettingsSheet(vm: MainViewModel, onDismiss: () -> Unit) {
 
             HorizontalDivider()
 
+            Group("Subtítulos") {
+                SwitchRow(
+                    title = "Buscar subtítulos en línea",
+                    detail = "Al enviar un video busca subtítulos en español e inglés (OpenSubtitles, como Stremio) y los deja " +
+                        "disponibles en el control. Solo se consulta el título, el año y el episodio; nada más sale del teléfono.",
+                    checked = prefs.onlineSubtitles,
+                ) { vm.setOnlineSubtitles(it) }
+            }
+
+            HorizontalDivider()
+
             Group("Al recibir un video de otra app") {
                 SwitchRow(
                     title = "Enviar automáticamente",

@@ -1,7 +1,8 @@
 # FreeVideocaster
 
 Envía videos desde Android (Stremio + TorBox, enlaces directos) a un Roku.
-Código abierto (GPL-3.0), sin anuncios y sin telemetría.
+Código abierto (GPL-3.0), sin anuncios y sin telemetría. La única consulta a servicios externos es la búsqueda
+opcional de subtítulos (ver «Subtítulos en línea» abajo), que se puede apagar en Ajustes.
 
 | Carpeta | Qué es |
 |---|---|
@@ -74,7 +75,8 @@ Marca cada punto. Si algo falla, anota el mensaje exacto (la app y el canal mues
 **B. Fase 1: Stremio → Roku**
 - [ ] La app aparece como reproductor externo en Stremio.
 - [ ] "Reproducir ahora" → el Roku empieza en menos de ~5 s y la app dice "Reproduciendo en …".
-- [ ] "Ver detalles técnicos" → **copia el texto y pásamelo** (indica si Stremio manda subtítulos).
+- [ ] "Ver detalles técnicos" → muestra lo que manda Stremio. **No pegues ese texto en ningún chat ni reporte sin revisarlo:
+  la dirección que manda Stremio lleva dentro tu clave de TorBox (codificada).**
 - [ ] Un video con audio DTS/TrueHD: la app avisa del tipo de audio.
 - [ ] Con el Roku apagado: error claro en pocos segundos.
 - [ ] Sin Wi-Fi (solo datos móviles): aviso "Sin Wi-Fi".
@@ -126,7 +128,8 @@ Se envían a `POST http://ROKU:8060/launch/dev?...` (abre el canal) o `POST http
 | `url` | URL del video |
 | `title` | `Episodio 3` |
 | `format` | `mp4`, `mkv`, `hls`, `dash` (si falta, se deduce o lo detecta Roku) |
-| `sub` | URL de subtítulos `.srt` o `.vtt` |
+| `sub` | URL de subtítulos `.srt` o `.vtt`; una sola pista, empieza encendida |
+| `subs` | Varias pistas externas, una por línea: `idioma\|nombre\|url` (p. ej. `spa\|En línea 1\|https://…`). Empiezan apagadas y se eligen después con `subtitle` |
 | `headers` | Cabeceras HTTP, una por línea: `Referer: …` |
 | `delta` / `pos` | Segundos para `skip` (relativo) y `seek` (absoluto) |
 | `start` | Segundo en el que empieza el video (para retomar) |
@@ -149,7 +152,15 @@ No incluye la URL del video.
 - El estado en vivo (posición, cola, errores) solo existe con el canal v2 abierto; con un canal antiguo la app
   recurre a lo que informa el reproductor del Roku, que es bastante menos.
 - Retomar funciona por enlace de Stremio (la URL original, antes de las redirecciones), no por título.
-- Subtítulos: solo URLs `http(s)`; los archivos guardados en el teléfono no se pueden enviar.
+- Subtítulos: solo URLs `http(s)`; los archivos guardados en el teléfono no se pueden enviar. Las pistas externas
+  tienen que ir **con el video** (`sub`/`subs` en la orden de reproducción): añadirlas con el video en marcha lo congela.
+
+### Subtítulos en línea
+Al enviar un video la app consulta Cinemeta (para saber qué película o serie es) y el complemento OpenSubtitles v3 de
+Stremio (los archivos `.srt`), sin cuenta ni clave. Se envía solo el título, el año, la temporada y el episodio; nunca la
+dirección del video. Ofrece hasta dos versiones en español y dos en inglés, ordenadas por parecido con el nombre del
+archivo, y el Roku las lista como «Español · En línea 1»… Se apaga en Ajustes → Subtítulos. Si la búsqueda falla, el video
+se envía igual.
 - Navegador: no funciona con videos con DRM ni con los que solo existen como `blob:`. Para los detectados,
   la app pasa al Roku las cookies de la página, por la red local y sin cifrar (ECP solo usa HTTP).
 - El modo desarrollador de Roku admite un solo canal instalado a la vez.

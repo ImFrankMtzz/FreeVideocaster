@@ -4,7 +4,7 @@
 '   - Al abrir el canal:      POST http://ROKU:8060/launch/dev?url=...&title=...
 '   - Con el canal abierto:   POST http://ROKU:8060/input?url=...&title=...
 '
-' Parámetros (ver README): action, url, title, format, sub, headers, pos, delta,
+' Parámetros (ver README): action, url, title, format, sub, subs, headers, pos, delta,
 ' key (identificador opaco que se devuelve en el estado), start (segundos), index
 ' (posición en la cola) e id (identificador de pista de audio o de subtítulos).
 ' También acepta los nombres de "Play on Roku" (u, videoName, videoFormat) y contentId.
@@ -70,6 +70,7 @@ sub HandleParams(scene as Object, params as Dynamic, pending as Object)
         title: FirstValue(params, ["title", "videoName"])
         format: LCase(FirstValue(params, ["format", "videoFormat"]))
         subtitle: FirstValue(params, ["sub", "subtitle"])
+        subs: FirstValue(params, ["subs"])
         headers: FirstValue(params, ["headers"])
         pos: FirstValue(params, ["pos"])
         delta: FirstValue(params, ["delta"])
