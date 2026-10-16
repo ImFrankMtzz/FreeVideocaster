@@ -13,8 +13,8 @@ android {
         applicationId = "io.github.freevideocaster"
         minSdk = 24
         targetSdk = 37
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 4
+        versionName = "1.1.2"
     }
 
     // La clave de firma vive en `signing/` (raíz del repositorio), que NUNCA se sube a git. Sin ella el release
