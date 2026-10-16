@@ -1,6 +1,6 @@
 # Hoja de ruta de FreeVideocaster
 
-Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-14.
+Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-16.
 
 ## Hecho (versión 0.2)
 
@@ -22,7 +22,7 @@ Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-14.
 | Aviso claro al pegar un magnet o una página web | Hecho y probado |
 | Mini-reproductor fijo sobre las pestañas | Hecho y probado |
 | Control remoto con cruceta, balancín de volumen, saltos circulares y pausa grande | Hecho y probado (efecto del volumen en el TV sin verificar) |
-| Elegir pista de audio y de subtítulos incrustados | Hecho y probado con un video HLS; falta un MKV real |
+| Elegir pista de audio y de subtítulos incrustados | Hecho y probado con un video HLS; con MKV real se probó después (ver 1.1.0 y `pruebas-subtitulos.md`) |
 | Las órdenes al Roku funcionan con una VPN activa | Hecho y probado |
 | Navegador: seleccionar todo al tocar la barra, cerrar el teclado, títulos limpios | Hecho y probado |
 
@@ -43,6 +43,12 @@ Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-14.
 | Subtítulos incrustados en MKV: empiezan apagados y se dibujan al elegirlos (cambio de audio en silencio) | Hecho y probado; sin probar con un solo audio ni en pausa |
 | Subtítulos en línea (OpenSubtitles v3 + Cinemeta): hasta 2 versiones en español y 2 en inglés, con interruptor en Ajustes | Hecho y probado con una serie; falta probar películas |
 | Nombres de pista limpios (sin direcciones de sitios) | Hecho y probado |
+
+## Hecho en la versión 1.1.1 (Release publicada el 2026-10-16)
+
+| Mejora | Estado |
+|---|---|
+| La app ya no se cierra al abrir «Cambiar de TV» mientras el Wi-Fi se reconecta (la búsqueda del Roku avisa en vez de fallar) | Hecho; el usuario comprobó que se muestra el aviso. Un cierre real quedó registrado en el teléfono (`ENETUNREACH`) |
 
 ## Siguiente bloque recomendado
 
@@ -84,7 +90,6 @@ serie; hasta 2 versiones en español y 2 en inglés, listadas como «En línea N
 | Mostrar qué obra encontró la búsqueda y poder corregirla; elegir otros idiomas | M |
 | **Ocultar la clave de TorBox** en «Ver detalles técnicos» y en el botón Copiar (la URL de Stremio la lleva dentro) | P |
 | Idioma preferido (p. ej. audio en español latino) aplicado solo al empezar cada video | M |
-| Averiguar qué manda Stremio (la pantalla «Ver detalles técnicos» lo muestra) | P |
 
 ## Funciones de referencia aún sin cubrir (ver `revision-wvc.md`)
 

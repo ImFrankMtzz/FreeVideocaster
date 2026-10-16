@@ -10,7 +10,7 @@ opcional de subtítulos (ver «Subtítulos en línea» abajo), que se puede apag
 | `android/` | App Android (Kotlin + Jetpack Compose + OkHttp). Ábrela con Android Studio. |
 | `scripts/` | Utilidades PowerShell para Windows (pruebas por ECP e instalación del canal) y `fake-roku.py`, un Roku falso para probar la app en un emulador. |
 | `out/` | Archivos generados: `FreeVideocaster-debug.apk` y el ZIP del canal. |
-| `docs/` | Notas del proyecto: `revision-wvc.md` (funciones de referencia de otra app similar), `mejoras.md` (hoja de ruta) y `pruebas-v0.2.md`, `pruebas-v0.3.md` y `pruebas-v0.4.md` (qué se probó y qué no). |
+| `docs/` | Notas del proyecto: `revision-wvc.md` (funciones de referencia de otra app similar), `mejoras.md` (hoja de ruta), `compatibilidad-android.md` (versiones de Android probadas) y `pruebas-v0.2.md`, `pruebas-v0.3.md`, `pruebas-v0.4.md` y `pruebas-subtitulos.md` (qué se probó y qué no). |
 
 > Para ejecutar los scripts: `powershell -ExecutionPolicy Bypass -File .\scripts\<script>.ps1 ...`
 > (así no hace falta cambiar la política de ejecución del equipo).
@@ -40,7 +40,8 @@ La app no transmite el video: solo le pasa el enlace al Roku. Después puedes ap
    Se abre solo en el Roku y muestra "Esperando un enlace…" con su IP.
 
 ### 2. Android
-**Requisitos:** Android 7.0 o superior (probado de Android 7.1 a 17; ver `docs/compatibilidad-android.md`), el
+**Requisitos:** Android 7.0 o superior (el envío está probado de Android 8 a 17; en 7.0 y 7.1 la app abre, pero el
+envío no se ha probado; ver `docs/compatibilidad-android.md`), el
 celular en la misma red Wi-Fi que el Roku, y un JDK 17+ con el SDK de Android si vas a compilarla tú.
 
 Elige una opción:
@@ -99,14 +100,6 @@ Marca cada punto. Si algo falla, anota el mensaje exacto (la app y el canal mues
 - [ ] Envía 3 videos con "Añadir a la cola": se reproducen seguidos; "Siguiente" salta; "Vaciar cola" la limpia.
 - [ ] Historial: sobrevive a cerrar la app; ▶ vuelve a enviar; la papelera borra.
 
-**G. Rediseño (versión 0.3)** (reinstala el canal con `deploy-roku.ps1` y la app nueva)
-- [ ] Inicio: tarjeta de conexión («Conectado»), «Seguir viendo» con los últimos videos, y «Cómo empezar» si no hay historial.
-- [ ] Tocar la tarjeta de conexión abre «Conectar a tu TV» (búsqueda, IP manual, compatibilidad).
-- [ ] «Enviar un enlace» avisa con claridad si pegas un magnet o una página web.
-- [ ] Barra de reproducción fija sobre las pestañas mientras algo suena; tocarla abre el control.
-- [ ] Control: saltos de 10 y 30 s (mantener pulsado repite), pausa grande, cruceta con OK, Atrás, Inicio y volumen.
-- [ ] Un video con varios idiomas: los botones «Audio» y «Subtítulos» abren la lista y cambian la pista de verdad.
-
 **F. Novedades de la versión 0.2** (reinstala el canal con `deploy-roku.ps1` y la app nueva)
 - [ ] Títulos limpios: un archivo tipo `Serie.S01E03.1080p.WEB-DL…` aparece como «Serie S01E03» con sus etiquetas.
 - [ ] Retomar: ve un video más de 1 minuto, ciérralo y vuelve a enviarlo desde Stremio: ofrece «Continuar desde …».
@@ -116,6 +109,14 @@ Marca cada punto. Si algo falla, anota el mensaje exacto (la app y el canal mues
 - [ ] Control: la cola muestra los elementos reales del Roku y la papelera quita uno.
 - [ ] Diagnóstico (botón en «Enviar»): todo en ✔ con el Roku bien; apaga el Roku o el Wi-Fi y comprueba que explica qué falla.
 - [ ] Un enlace caducado: el diagnóstico (y el aviso al enviar) dicen que expiró.
+
+**G. Rediseño (versión 0.3)** (reinstala el canal con `deploy-roku.ps1` y la app nueva)
+- [ ] Inicio: tarjeta de conexión («Conectado»), «Seguir viendo» con los últimos videos, y «Cómo empezar» si no hay historial.
+- [ ] Tocar la tarjeta de conexión abre «Conectar a tu TV» (búsqueda, IP manual, compatibilidad).
+- [ ] «Enviar un enlace» avisa con claridad si pegas un magnet o una página web.
+- [ ] Barra de reproducción fija sobre las pestañas mientras algo suena; tocarla abre el control.
+- [ ] Control: saltos de 10 y 30 s (mantener pulsado repite), pausa grande, cruceta con OK, Atrás, Inicio y volumen.
+- [ ] Un video con varios idiomas: los botones «Audio» y «Subtítulos» abren la lista y cambian la pista de verdad.
 
 ## Detalles técnicos
 
@@ -155,18 +156,19 @@ No incluye la URL del video.
 - Subtítulos: solo URLs `http(s)`; los archivos guardados en el teléfono no se pueden enviar. Las pistas externas
   tienen que ir **con el video** (`sub`/`subs` en la orden de reproducción): añadirlas con el video en marcha lo congela.
 
-### Subtítulos en línea
-Al enviar un video la app consulta Cinemeta (para saber qué película o serie es) y el complemento OpenSubtitles v3 de
-Stremio (los archivos `.srt`), sin cuenta ni clave. Se envía solo el título, el año, la temporada y el episodio; nunca la
-dirección del video. Ofrece hasta dos versiones en español y dos en inglés, ordenadas por parecido con el nombre del
-archivo, y el Roku las lista como «Español · En línea 1»… Se apaga en Ajustes → Subtítulos. Si la búsqueda falla, el video
-se envía igual.
 - Navegador: no funciona con videos con DRM ni con los que solo existen como `blob:`. Para los detectados,
   la app pasa al Roku las cookies de la página, por la red local y sin cifrar (ECP solo usa HTTP).
 - El modo desarrollador de Roku admite un solo canal instalado a la vez.
 - Bloqueador de anuncios: funciona solo dentro del navegador de la app y reduce los anuncios, no garantiza quitarlos
   todos. Corta peticiones y ventanas emergentes y oculta recuadros con las listas públicas; los anuncios dentro de
   un video (o los que se sirven desde el mismo dominio de la página) pueden pasar.
+
+### Subtítulos en línea
+Al enviar un video la app consulta Cinemeta (para saber qué película o serie es) y el complemento OpenSubtitles v3 de
+Stremio (los archivos `.srt`), sin cuenta ni clave. Se envía solo el título, el año, la temporada y el episodio; nunca la
+dirección del video. Ofrece hasta dos versiones en español y dos en inglés, ordenadas por parecido con el nombre del
+archivo, y el Roku las lista como «Español · En línea 1»… Se apaga en Ajustes → Subtítulos. Si la búsqueda falla, el video
+se envía igual.
 
 ### Bloqueador de anuncios y listas de filtros
 El navegador integrado usa las listas **EasyList**, **EasyPrivacy** y **EasyList Spanish** (con la sintaxis de

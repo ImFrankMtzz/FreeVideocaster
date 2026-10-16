@@ -40,6 +40,6 @@ Lint sin avisos.
 | Botones de la notificación y de la pantalla de bloqueo, pulsados de verdad | La herramienta de prueba no ve la barra de notificaciones en Android 17. |
 | Teclas multimedia físicas (audífonos) | El sistema las reserva para otra app (YouTube); no afecta a la notificación. |
 | Que el volumen del TV cambie al usar el balancín, y el efecto de las flechas de la cruceta en los menús | Se comprobó que el Roku acepta las órdenes, no el resultado en pantalla. |
-| Audio y subtítulos con un **MKV real de TorBox** (varias pistas incrustadas) | Se probó con un video HLS de prueba. En MKV los nombres de las pistas pueden venir distintos. |
+| Audio y subtítulos con un **MKV real de TorBox** (varias pistas incrustadas) | Se probó con un video HLS de prueba. En MKV los nombres de las pistas pueden venir distintos. **Actualización:** ya se probó con MKV reales de TorBox el 2026-10-14; ver `pruebas-subtitulos.md`. |
 | Botón «Probar con un video de ejemplo» | Solo aparece sin historial; no se vació el tuyo para probarlo. |
 | Flujo real desde Stremio con la v0.3 | Probar a mano. |
