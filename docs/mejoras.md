@@ -36,6 +36,14 @@ Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-14.
 | Pantalla «Reproduciendo» tras enviar desde Stremio, con título real del archivo | Hecho y probado |
 | Enviar automáticamente y volver a Stremio solo (ajustes, desactivados de fábrica) | Hecho y probado |
 
+## Hecho en la versión 1.1.0 (Release publicada el 2026-10-14; ver `pruebas-subtitulos.md`)
+
+| Mejora | Estado |
+|---|---|
+| Subtítulos incrustados en MKV: empiezan apagados y se dibujan al elegirlos (cambio de audio en silencio) | Hecho y probado; sin probar con un solo audio ni en pausa |
+| Subtítulos en línea (OpenSubtitles v3 + Cinemeta): hasta 2 versiones en español y 2 en inglés, con interruptor en Ajustes | Hecho y probado con una serie; falta probar películas |
+| Nombres de pista limpios (sin direcciones de sitios) | Hecho y probado |
+
 ## Siguiente bloque recomendado
 
 | Mejora | Detalle | Esfuerzo |
