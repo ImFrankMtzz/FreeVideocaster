@@ -50,6 +50,12 @@ Esfuerzo: **P** pequeño, **M** mediano, **G** grande. Estado a 2026-10-16.
 |---|---|
 | La app ya no se cierra al abrir «Cambiar de TV» mientras el Wi-Fi se reconecta (la búsqueda del Roku avisa en vez de fallar) | Hecho; el usuario comprobó que se muestra el aviso. Un cierre real quedó registrado en el teléfono (`ENETUNREACH`) |
 
+## Hecho en la versión 1.1.2 (Release publicada el 2026-10-16)
+
+| Mejora | Estado |
+|---|---|
+| Ocultar la clave de TorBox en «Ver detalles técnicos» y en el botón Copiar (`media/UrlRedactor`: tramos en base64 de la ruta, `token=`/`key=`… de la consulta y usuario:clave del enlace) | Hecho con 8 pruebas unitarias; falta probarlo en el teléfono con un envío real desde Stremio |
+
 ## Siguiente bloque recomendado
 
 | Mejora | Detalle | Esfuerzo |
@@ -88,7 +94,6 @@ serie; hasta 2 versiones en español y 2 en inglés, listadas como «En línea N
 |---|---|
 | Subtítulos por URL pegada y archivo del teléfono (la búsqueda en línea ya está), más estilo | G |
 | Mostrar qué obra encontró la búsqueda y poder corregirla; elegir otros idiomas | M |
-| **Ocultar la clave de TorBox** en «Ver detalles técnicos» y en el botón Copiar (la URL de Stremio la lleva dentro) | P |
 | Idioma preferido (p. ej. audio en español latino) aplicado solo al empezar cada video | M |
 
 ## Funciones de referencia aún sin cubrir (ver `revision-wvc.md`)

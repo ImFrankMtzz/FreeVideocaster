@@ -47,7 +47,7 @@ Probado el mismo día con un episodio de serie enviado desde Stremio (el título
 | Pruebas unitarias | 87, sin fallos; Lint limpio |
 
 Stremio no manda título, subtítulos ni IMDb; sí `season` y `episode` dentro de la URL. Esa URL contiene la clave de
-TorBox: no copiar «Ver detalles técnicos» a ningún sitio.
+TorBox: no copiar «Ver detalles técnicos» a ningún sitio (en las versiones hasta la 1.1.1; después la clave se oculta).
 
 ## Sin probar
 

@@ -18,12 +18,13 @@ object IncomingIntentParser {
 
     fun parse(intent: Intent): Parsed {
         val extras = intent.extras
+        // Es lo que se muestra y se copia: los enlaces llevan claves (la de TorBox), así que se ocultan aquí.
         val details = buildList {
             add("action" to (intent.action ?: "-"))
             add("data" to (intent.dataString ?: "-"))
             add("type" to (intent.type ?: "-"))
             extras?.keySet()?.sorted()?.forEach { key -> add("extra: $key" to describe(rawExtra(extras, key))) }
-        }
+        }.map { (key, value) -> key to UrlRedactor.redactUrls(value) }
 
         val url = when (intent.action) {
             Intent.ACTION_VIEW -> intent.dataString?.takeIf { it.startsWith("http", ignoreCase = true) }

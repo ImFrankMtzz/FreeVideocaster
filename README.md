@@ -76,8 +76,9 @@ Marca cada punto. Si algo falla, anota el mensaje exacto (la app y el canal mues
 **B. Fase 1: Stremio → Roku**
 - [ ] La app aparece como reproductor externo en Stremio.
 - [ ] "Reproducir ahora" → el Roku empieza en menos de ~5 s y la app dice "Reproduciendo en …".
-- [ ] "Ver detalles técnicos" → muestra lo que manda Stremio. **No pegues ese texto en ningún chat ni reporte sin revisarlo:
-  la dirección que manda Stremio lleva dentro tu clave de TorBox (codificada).**
+- [ ] "Ver detalles técnicos" → muestra lo que manda Stremio, con las claves del enlace ocultas («oculto»), también
+  al copiar. **Las versiones hasta la 1.1.1 no las ocultaban: la dirección que manda Stremio lleva dentro tu clave de
+  TorBox (codificada), así que con una de esas no pegues ese texto en ningún chat ni reporte.**
 - [ ] Un video con audio DTS/TrueHD: la app avisa del tipo de audio.
 - [ ] Con el Roku apagado: error claro en pocos segundos.
 - [ ] Sin Wi-Fi (solo datos móviles): aviso "Sin Wi-Fi".

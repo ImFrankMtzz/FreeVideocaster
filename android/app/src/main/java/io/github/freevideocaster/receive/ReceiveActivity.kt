@@ -382,6 +382,11 @@ private fun ReceiveScreen(vm: ReceiveViewModel, onClose: () -> Unit, onOpenRemot
                 }
                 if (showDetails && parsed != null) {
                     val text = parsed.details.joinToString("\n") { (key, value) -> "$key = $value" }
+                    Text(
+                        "Las claves que lleva el enlace (como la de TorBox) aparecen ocultas, también al copiar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     SelectionContainer {
                         Text(text, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                     }
