@@ -6,6 +6,7 @@ import android.os.SystemClock
 import io.github.freevideocaster.net.WifiTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -23,39 +24,48 @@ class SsdpDiscovery(context: Context) {
             acquire()
         }
         try {
-            DatagramSocket().use { socket ->
-                // Con una VPN activa el multicast no saldría por la red local sin esto.
-                runCatching { WifiTracker.network?.bindSocket(socket) }
-                socket.soTimeout = 500
-                val message = (
-                    "M-SEARCH * HTTP/1.1\r\n" +
-                        "Host: 239.255.255.250:1900\r\n" +
-                        "Man: \"ssdp:discover\"\r\n" +
-                        "ST: roku:ecp\r\n" +
-                        "MX: 2\r\n\r\n"
-                    ).toByteArray()
-                val group = InetAddress.getByName("239.255.255.250")
-                repeat(2) { socket.send(DatagramPacket(message, message.size, group, 1900)) }
-
-                val found = linkedSetOf<String>()
-                val buffer = ByteArray(2048)
-                val deadline = SystemClock.elapsedRealtime() + timeoutMs
-                while (SystemClock.elapsedRealtime() < deadline) {
-                    val packet = DatagramPacket(buffer, buffer.size)
-                    try {
-                        socket.receive(packet)
-                    } catch (e: SocketTimeoutException) {
-                        continue
-                    }
-                    val response = String(packet.data, 0, packet.length)
-                    LOCATION.find(response)?.groupValues?.get(1)?.let { found += it }
-                }
-                found.toList()
-            }
+            search(timeoutMs)
+        } catch (e: IOException) {
+            // Con el Wi-Fi reconectándose, enviar falla con ENETUNREACH; sin este aviso la app se cerraba.
+            throw CastException(
+                "No pude buscar en la red ahora mismo (el Wi-Fi no está listo). " +
+                    "Inténtalo de nuevo en unos segundos o agrégalo con su IP."
+            )
         } finally {
             lock.release()
         }
     }
+
+    private fun search(timeoutMs: Long): List<String> =
+        DatagramSocket().use { socket ->
+            // Con una VPN activa el multicast no saldría por la red local sin esto.
+            runCatching { WifiTracker.network?.bindSocket(socket) }
+            socket.soTimeout = 500
+            val message = (
+                "M-SEARCH * HTTP/1.1\r\n" +
+                    "Host: 239.255.255.250:1900\r\n" +
+                    "Man: \"ssdp:discover\"\r\n" +
+                    "ST: roku:ecp\r\n" +
+                    "MX: 2\r\n\r\n"
+                ).toByteArray()
+            val group = InetAddress.getByName("239.255.255.250")
+            repeat(2) { socket.send(DatagramPacket(message, message.size, group, 1900)) }
+
+            val found = linkedSetOf<String>()
+            val buffer = ByteArray(2048)
+            val deadline = SystemClock.elapsedRealtime() + timeoutMs
+            while (SystemClock.elapsedRealtime() < deadline) {
+                val packet = DatagramPacket(buffer, buffer.size)
+                try {
+                    socket.receive(packet)
+                } catch (e: SocketTimeoutException) {
+                    continue
+                }
+                val response = String(packet.data, 0, packet.length)
+                LOCATION.find(response)?.groupValues?.get(1)?.let { found += it }
+            }
+            found.toList()
+        }
 
     private companion object {
         val LOCATION = Regex("""(?im)^LOCATION:\s*http://([\d.]+):8060""")
